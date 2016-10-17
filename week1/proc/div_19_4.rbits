@@ -1,0 +1,8 @@
+0013    # This is the dividend (argument 1 for divider.rbits)
+0004    # This is the divisor (argument 2 for divider.rbits)
+8000    # This is a constant, which is used to check if a number is negative.
+0001    # This is a constant, which is used to cause the function to loop.
+ffff
+ffff
+ffff
+ffff

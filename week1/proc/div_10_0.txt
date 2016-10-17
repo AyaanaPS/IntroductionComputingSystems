@@ -1,0 +1,10 @@
+The result of running div_10_0.rbits is the following error:
+
+ERROR: Max execute time reached.
+
+This is a result of an infinite loop in the function, which is due to the 
+lack of error checking. The error occurs because the remainder never changes
+(since remainder - divisor = remainder - 0 = remainder). Thus, in every
+run through of the loop, the condition that remainder >= divisor is satisfied,
+since remainder is permanently equal to the dividend (in this case), so the
+body of the loop keeps executing infinitely.

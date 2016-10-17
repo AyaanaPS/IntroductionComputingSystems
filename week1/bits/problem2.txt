@@ -1,0 +1,30 @@
+Consider the following example:
+
+n = 1011 (11)
+
+Then, n = n & (n - 1) can be evaluated as n = (11) & (10), or in binary:
+n = 1011 & 1010 = 1010 = (10)
+
+This continues until n = 0:
+
+n = 1010 (10)
+So n = (10) & (9) = 1010 & 1001 = 1000 = (8)
+
+n = 1000 (8)
+So n = (8) & (7) = 1000 & 0111 = 0000 = (0)
+
+The number of 1's is the number of times that the n = n & (n - 1) occurs before 
+n = 0. Therefore, in this case, the number of one bits is 3. 
+This works because subtracting 1 from the number will switch the value of all 
+the bits leading up to the rightmost 1. i.e. Since the binary representation of
+8 is 1000, the binary representation of 7 or 8-1 is 0111 (which is the result
+of switching all the values at the positions up to and including the position of
+the 1 in the binary representation of 8.) Thus, the result of the & operator
+will be a 0 in all the positions that were switched (because now none of them
+will be matching). Therefore, each execution of the expression will knock of 
+one of the onebits in the binary representation of the original value.
+
+This is faster because it does not require us to evaluate every single bit in
+the value. 
+
+

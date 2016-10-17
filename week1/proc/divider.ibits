@@ -1,0 +1,10 @@
+0fb6 #  R6<-R6^R6   -- put a zero in R6 which holds the quotient
+0fff #  R7<-R7^R7   -- put a zero in R7 which holds the remainder
+023f #  R7<-R0+R7   -- sets the remainder = dividend
+0bcc # LOOP_TOP (3): R4<-R7-R1 -- temp = remainder - divisor
+a314 #  R4<-R4&RR2  -- temp = temp&constant, where constant is 8000 (hex)
+2909 #  BNZ R4 9    -- if temp != 0 then remainder < divisor, so branch DONE
+0bcf #  R7<-R7-R1   -- remainder = remainder - divisor
+1786 #  R6<-R6+1    -- quotient = quotient + 1
+28c3 #  BNZ R3 3    -- R3 contains 1, so this goes back to branch LOOP_TOP
+3c00 # DONE (9)     -- finished, exit leaving quotient in R6 and remainder in R7

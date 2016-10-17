@@ -1,0 +1,24 @@
+Practice Problem 2.46
+
+A. The binary representation of 0.1 is 0.000110011[0011]... (non terminating)
+and the binary representation of x is x = 0.00011001100110011001100.
+
+Thus, the value of 0.1 - x = 0.00000000000000000000000110011001100[1100]...
+(non terminating).
+
+B. We can see that the binary representation of 0.1 - x is the same as the 
+binary representation of 0.1 except for the 20 0's in the beginning of it
+(the zeroes following the first 3 and up to the first [1100].)
+Since each digit is a base 2, this means the decimal representation is 
+2^-20 * 0.1 = 9.537 * 10^-8.
+
+C. We must calculate the accumulated error over this time period:
+Since the counter is incremented every 0.1 seconds, the amount of increments
+in this time period is (100 hours) * (60 minutes/1 hours) * (60 seconds/1 min)
+* (1 increment/0.1 seconds) = 3600000
+Thus, the total accumulated error is 9.537 * 10^-8 * 3600000 = 0.343 seconds
+
+D. The total prediction error is the total accumulated time error * the speed:
+0.343 seconds * 2000 (m/s) = 686.7 m
+
+

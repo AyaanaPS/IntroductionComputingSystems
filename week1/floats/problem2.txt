@@ -1,0 +1,16 @@
+The results of the three sums are different due to precision loss in
+rounding. Floating point numbers are stored in three components: the sign, 
+the exponent and the mantissa. The mantissa represents the precision bits of 
+the number and only holds a certain amount of fraction bits (the bits to the 
+right of the radix point). The precision error arises when bits have to knocked
+off because they are not large enough to be included in the mantissa. 
+For example, consider the case of adding 1 billion and then an amount of 1's. 
+If 1 billion is the first number looked at, the addition of 1 billion and 1 will
+just be 1 billion, since because of the mantissa, the final 1 will be knocked
+off. Thus, for this reason, the approach that first sorts the numbers in 
+increasing magnitude and then sums them is the "most accurate", since it 
+reduces the type of error seen above because the smaller numbers (that are 
+closer in magnitude) are allowed to accumulate and impact the larger numbers.
+One kind of data set that would still cause large errors even in this 
+"most accurate" approach is one in which there are two extremes of magnitude
+and not much in between. 

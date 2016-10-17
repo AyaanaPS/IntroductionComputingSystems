@@ -1,0 +1,120 @@
+/*! \file
+ *
+ * This file contains definitions for an Arithmetic/Logic Unit of an
+ * emulated processor.
+ */
+
+
+#include <stdio.h>
+#include <stdlib.h>   /* malloc(), free() */
+#include <string.h>   /* memset() */
+
+#include "alu.h"
+#include "instruction.h"
+
+
+/*!
+ * This function dynamically allocates and initializes the state for a new ALU
+ * instance.  If allocation fails, the program is terminated.
+ */
+ALU * build_alu() {
+    /* Try to allocate the ALU struct.  If this fails, report error then exit. */
+    ALU *alu = malloc(sizeof(ALU));
+    if (!alu) {
+        fprintf(stderr, "Out of memory building an ALU!\n");
+        exit(11);
+    }
+
+    /* Initialize all values in the ALU struct to 0. */
+    memset(alu, 0, sizeof(ALU));
+    return alu;
+}
+
+
+/*! This function frees the dynamically allocated ALU instance. */
+void free_alu(ALU *alu) {
+    free(alu);
+}
+
+
+/*!
+ * This function implements the logic of the ALU.  It reads the inputs and
+ * opcode, then sets the output accordingly.  Note that if the ALU does not
+ * recognize the opcode, it should simply produce a zero result.
+ */
+void alu_eval(ALU *alu) {
+    uint32_t A, B, aluop;
+    uint32_t result;
+
+    A = pin_read(alu->in1);
+    B = pin_read(alu->in2);
+    aluop = pin_read(alu->op);
+
+    result = 0;
+
+    switch (aluop) {
+
+        // This performs an addition on the two inputted unsigned_ints.
+        case ALUOP_ADD:
+            result = A + B;
+            break;
+
+        // This inverts (unary negates) the inputted number.
+        case ALUOP_INV:
+            result = ~A;
+            break;
+
+        // This performs a subtraction on the two inputted unsigned_ints.
+        case ALUOP_SUB:
+            result = A - B;
+            break;
+
+        // This performs an exclusive or using the ^, which is C's XOR operator.
+        case ALUOP_XOR:
+            result = A ^ B;
+            break;
+
+        // This performs a normal or using |, which is C's or operator.
+        case ALUOP_OR:
+            result = A | B;
+            break;
+
+        // This increments the inputted number by 1.
+        case ALUOP_INCR:
+            result = A + 1;
+            break;
+
+        // This performs a bitwise AND operation on the two inputted numbers
+        // using C's bitwise and operator (&).
+        case ALUOP_AND:
+            result = A & B;
+            break;
+
+        // This performs an arithmetic shift right by first casting the number
+        // as a signed int and then shifting it right.
+        case ALUOP_SRA:
+            result = ((int) A) >> 1;
+            break;
+
+        // This performs a logical shift right by calling the bitwise shift 
+        // right operator.
+        case ALUOP_SRL:
+            result = A >> 1;
+            break;
+
+        // This performs an arithmetic shift left by first casting the number
+        // as a signed int and then shifting it left.            
+        case ALUOP_SLA:
+            result = ((int) A) << 1;
+            break;
+
+        // This performs a logical shift left by calling the bitwise shift left
+        // operator.
+        case ALUOP_SLL:
+            result = A << 1;
+            break;
+    }
+
+    pin_set(alu->out, result);
+}
+
