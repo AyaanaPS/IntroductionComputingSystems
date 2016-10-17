@@ -1,0 +1,78 @@
+Part 2: 
+
+-----------------------------------------------------------------------------
+d)
+
+B = block size in bytes = 32 bytes
+S = total number of cache-sets = 256
+E = number of lines per cache set = 1
+    This is because we are using a direct-mapped cache.
+
+Therefore, the command run is:
+./heaptest 32:256:1
+ 
+This gives the following memory-access statistics:
+
+    * Cache reads = 387851976 writes = 156711356 hits = 531488886
+        misses = 13074446 miss-rate = 2.40% random replacement policy
+    * Memory reads = 418382272 writes = 334897760
+
+./heaptest 32:256:1 16.31s user 0.03s system 99% cpu 16.478 total
+
+-----------------------------------------------------------------------------
+e) 
+
+B = block size in bytes = 32 bytes
+S = total number of cache-sets = 1
+    This is because we are using a fully associative cache.
+E = number of lines per cache set = 256
+
+Therefore, the command run is: 
+./heaptest 32:1:256
+
+This gives the following memory-access statistics:
+
+    * Cache reads = 387851976 writes = 156711356 hits = 531217776
+        misses = 13345556 miss-rate = 2.45% random replacement policy
+    * Memory reads = 427057792 writes = 345422560
+
+./heaptest 32:1:256 69.30s user 0.06s system 94% cpu 1:13.06 total
+
+-----------------------------------------------------------------------------
+g)
+
+-----------------------------------------------------------------------------
+Direct Mapped Cache:
+
+command: ./heaptest 32:256:1
+
+This gives the following memory-access statistics:
+
+    * Cache reads = 387851976 writes = 156711356 hits = 531488886
+        misses = 13074446 miss-rate = 2.40% LRU replacement policy
+    * Memory reads = 418382272 writes = 334897760
+
+./heaptest 32:256:1 16.86s user 0.03s system 88% cpu 19.032 total
+
+
+-----------------------------------------------------------------------------
+Fully Associative Cache:
+
+command: ./heaptest 32:1:256
+
+This gives the following memory-access statistics:
+
+    * Cache reads = 387851976 writes = 156711356 hits = 532270889
+        misses = 12292443 miss-rate = 2.26% LRU replacement policy
+    * Memory reads = 393358176 writes = 315978048
+
+./heaptest 32:1:256 74.61s user 0.05s system 93% cpu 1:19.43 total
+
+
+----------------------------------------------------------------------------
+These results show that the direct mapped cache experiences the same
+statistics for both the LRU replacement policy and the random 
+replacement policy.
+
+Meanwhile, the fully associative cache displays a lower miss-rate for
+the LRU replacement policy (as expected).

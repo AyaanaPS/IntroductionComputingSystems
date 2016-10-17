@@ -1,0 +1,291 @@
+Multimap Caching Performance
+============================
+
+--------------------------------------------------------------------------------
+a)  Size of hardware cache lines:
+
+The block size used by the hardware data caches is 64B.
+This was computed using the formula CacheSize/(Associativity * Sets), since
+Associativity * Sets = Number of Blocks.
+This was done for each Cache Index, to ensure that the value is the same for
+all:
+
+Cache Index 0: (32768)/(8*64) = (32768)/(512) = 64
+Cache Index 1: (32768)/(8*64) = (32768)/(512) = 64
+Cache Index 2: (262144)/(8*512) = (262144)/(4096) = 64
+Cache Index 3: (3145728)/(12*4096) = (3145728)/(49152) = 64
+
+--------------------------------------------------------------------------------
+b)  Output of mmperf:
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997144/1000000 (99.7%)
+Total wall-clock time:  25.79 seconds       us per probe:  25.786 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997715/1000000 (99.8%)
+Total wall-clock time:  73.22 seconds       us per probe:  73.219 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997325/1000000 (99.7%)
+Total wall-clock time:  66.54 seconds       us per probe:  66.538 us
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 1000000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  949586/1000000 (95.0%)
+Total wall-clock time:  9.39 seconds        us per probe:  9.388 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  976/50000 (2.0%)
+Total wall-clock time:  234.13 seconds      us per probe:  4682.551 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  980/50000 (2.0%)
+Total wall-clock time:  222.30 seconds      us per probe:  4446.001 us
+
+
+--------------------------------------------------------------------------------
+c)  Explanation of tests:
+
+In the first 3 tests, the only variable is the way keys are added (random, 
+incrementing or decrementing). These tests have a small number of keys and 
+a large number of values (which is clear because the range of keys is small
+and the range of values is large). Thus, these tests test how easily values are
+accessed for a given key.
+
+Meanwhile, the second three tests check performance for a high depth tree. These
+tests have a large range of keys and a small range of values, indicating that
+they will store many different keys. Thus, these tests test how easily 
+keys are iterated through.
+
+Each of these two kinds of tests have 3 versions that vary in terms of how 
+the keys are chosen. This is to test the self-balancing nature of the tree.
+Random is faster than incrementing or decrementing keys before any 
+optimizations occur because the tree is more balanced when the keys are 
+randomized. If the keys are incrementing, every key will be added to the 
+right of the key above. If the keys are decrementing, every key will be added
+to the left of the key above.
+
+--------------------------------------------------------------------------------
+e)  Explanation of your optimizations:
+
+The first issue that I attempted to address was the issue with iterating through
+values. The value struct initially requires 8 bytes of memory (because it
+only stores an int and a pointer). Each value lives in one block of
+the cache. Since one block can hold 64 bytes, this means that 56 bytes of 
+memory was being wasted. Furthermore, performance was bad because in order
+to traverse the linked list of values, empty memory had to be traversed 
+through, which took time. To overcome this issue, I changed the int value; to
+an int value[14]. In other words, I made each value struct store an int array
+of values and an int for the current amount of slots occupied in the array.
+The array size of 14 was chosen because this made the struct take up exactly
+64 bytes (14*4 = 56 for the array + 4 for the currentSize variable + 4 for
+the next pointer = 64). The code was then changed so that every time a value
+struct was reached (say to find a value or store a value), the code would
+go through the array of integers in the struct instead of just reading the 
+value. This increased the time in the first 3 tests, because these are the
+tests that measure iterating through values. This solved the problems 
+identified because it more effectively utilized cache space.
+
+The next issue that I attempted to address was the issue of an unbalanced tree.
+Upon running the tests the first time and analyzing the code, it was clear
+that the major performance issue was with the fact that the tree was 
+unbalanced. As the last 3 tests showed, with a large amount of keys, it 
+became extremely time intensive to iterate through the all the keys and 
+to traverse through all the memory occupied by each new node (since each
+node only stores one key).
+
+To overcome this, I tried to implement a B Tree. This is a kind of self
+balancing tree that stores multiple keys in a node in a sorted order (thus
+allowing for easier traversal). They are optimized for situations where
+a large amount of data is being read and written.  
+
+The first step of my optimization was to change the structs. I retained my
+value struct that I had changed above. I then added a key struct which stored
+a key, pointer to a linked list of values and a values_tail (the objects
+that were previously in the node structure), a next key pointer and a left_child
+pointer. The struct only has one child node because each key only needs to 
+have a pointer pointing to a node with keys less than it. 
+I then altered the node struct to contain a keys linked list and a pointer
+to the end of the list, as well as a number of keys stored so far.
+
+For the sake of keeping a small size, I allowed each node to hold a maximum
+number of nodes of 5. I then I had to make various changes in the code
+to include the B Tree's self-balancing nature.
+
+I added 5 functions. The first was simply a alloc_mm_key() function that
+performed similarly to the alloc_mm_node() function. The next, was a 
+search_tree function, that iterated through each node to find the key. To 
+do this, it had to iterate through each node until it either found itself 
+or a key larger than it. If it found a key larger than it, it would call the
+search tree function on the child node of the key (if it exists). If the child
+node doesn't exist, the key is not in the tree. 
+
+The next functions aid in inserting a key. The first is the actual insertKey
+function, which takes the map, and a key. This function will either 
+1) create a root node, if none exists, and give it this key
+2) split the root node (if it is full), make a new root node and then call
+    the insert helper function on the new root node
+3) call the insert helper function on the root node
+
+The insert helper function will find a proper location to store the key, based
+on its size. The insert helper function takes non full nodes and sees if it 
+should place the key in the non full node itself, or into one of its children.
+
+The most unique function is the split node function, which takes a non full
+parent and a full child node. This function splits the node into left keys,
+middle key and right keys. The middle key then goes into the parent node, 
+the left keys stay in the child node and the right keys go into a new node.
+The function then switches around the pointers to retain the overall structure.
+This function performs the actual balancing that is unique to this type of tree.
+Thus, by the time all pairs have been added to the map, the root node will
+contain the middle keys (the keys with numbers in the middle of the range
+of possible key number (note: I am using the word numbers to avoid the 
+confusion of the int key; value with the values stored in the key)). This makes
+traversal easier because both sides of the tree have the same depth, which
+cuts down the amount of nodes that have to be looked it. 
+
+------------------------------------------------------------------------------
+NOTE: 
+
+I wrote all of these functions in the file opt_mm_impl_BT.c. This file
+contains both of the optimizations described above and passes ./ommtest.
+However, when I run ./ommperf all at once (i.e. all the tests of ommperf run in
+one execution of ./ommperf), it segfaults on the second test. Meanwhile,
+when I run each test individually they all run through normally. I have
+included the results of doing this below.
+
+The file opt_mm_impl.c contains only the first optimization described above 
+(so that when you run the tests it doesn't seg fault). 
+
+------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+f)  Output of ommperf:
+
+./ommperf on the opt_mm_impl.c file, which contains only the first 
+optimization described above (the linked list of arrays).
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997144/1000000 (99.7%)
+Total wall-clock time:  1.39 seconds        us per probe:  1.390 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997715/1000000 (99.8%)
+Total wall-clock time:  1.87 seconds        us per probe:  1.873 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  997325/1000000 (99.7%)
+Total wall-clock time:  2.02 seconds        us per probe:  2.024 us
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 1000000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  949586/1000000 (95.0%)
+Total wall-clock time:  1.11 seconds        us per probe:  1.108 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  976/50000 (2.0%)
+Total wall-clock time:  32.81 seconds       us per probe:  656.249 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  980/50000 (2.0%)
+Total wall-clock time:  31.03 seconds       us per probe:  620.623 us
+
+
+
+
+These are the results of the tests for the opt_mm_impl_BT.c
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  996256/1000000 (99.6%)
+Total wall-clock time:  1.49 seconds        us per probe:  1.491 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  995926/1000000 (99.6%)
+Total wall-clock time:  1.64 seconds        us per probe:  1.638 us
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 pairs to multimap.  Keys in range [0, 50), values in range 
+[0, 1000).
+Probing multimap 1000000 times.  Keys in range [0, 50), values in range 
+[0, 1000).
+Total hits:  996306/1000000 (99.6%)
+Total wall-clock time:  1.52 seconds        us per probe:  1.525 us
+
+DIDN'T HAVE TIME TO RUN TEST FOUR. This one was now taking an incredibly long
+time.
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  495/50000 (1.0%)
+Total wall-clock time:  37.55 seconds       us per probe:  750.931 us
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 pairs to multimap.  Keys in range [0, 100000), values in range 
+[0, 50).
+Probing multimap 50000 times.  Keys in range [0, 100000), values in range 
+[0, 50).
+Total hits:  981/50000 (2.0%)
+Total wall-clock time:  0.04 seconds        us per probe:  0.841 us
+
+-------------------------------------------------------------------------------
+Clearly, my B Tree implementation worked well for the last test, where the 
+time was significantly shortened.
+-------------------------------------------------------------------------------
