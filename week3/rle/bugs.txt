@@ -1,0 +1,45 @@
+Note: All changes in rl_decode.s can be found by looking for the 
+comment that says 'EDITED'.
+
+Bug 1:
+
+In find_space_loop, only 1 is added to the esi in order to move to 
+the next count. However, because counts are only in the odd memory
+locations, we actually need to add 2. Thus, to fix this bug, we 
+adjust the add statement so that it instead reads:
+add     $2, %esi
+
+Bug 2:
+
+In write_loop, edi is never incremented. This means that the value
+will keep being written to the same location in memory. In other
+words, if we want to write 'A' 5 times, this code will give us just
+'A' instead of 'AAAAA' since it will keep writing 'A' in the same
+place. In order to fix this bug, we increment edi. This must
+happen before we decrement bh since the jnz statement refers to the
+value of bh (which must be above it). Thus, the following statement was
+added:
+inc     %edi
+
+Bug 3:
+
+In find_space_done, the call to malloc raises the issue that the caller-save
+registers can be edited so that their values are changed. This is because
+malloc is the callee, and if the values of the caller-save registers ( which are
+registers ecx and edx) are not saved and then restored, they can be lost. 
+To overcome this, we must push %ecx to the stack and then after we clean up the
+stack following the malloc call, we pop to %ecx (thus, restoring the value).
+We do not need to do this for %edx because it is not used after the call to
+malloc, so its value is unimportant.
+
+Bug 4:
+
+The last issue was the size differences of the actual vs expected output. 
+I noticed that this difference was always 256, which suggests an issue with
+being able to store the correct amount due to an overflow of memory. In order 
+to fix this, I used a carry flag. To fix this, I sectioned off part of
+the find_space_loop (everything following the 'add (%ecx, %esi), %bl') into
+another segment (find_space_continue). I then added a jump if not carry flag
+(jnc) which jumped to find_space_continue. If there was a carry, I added 
+256 to the value of %ebx. It then automatically proceeded to 
+find_space_continue.

@@ -1,0 +1,70 @@
+Explicit-Allocator Robustness Answers
+
+a)
+
+Case 1: An address that did not originate from myalloc()
+
+    This will result in a segmentation fault. This is because
+    the function immediately tries to access the size of the 
+    header stored at that address. However, since that address
+    is not in the memory pool, no headers could possibly have been
+    created there.
+
+Case 2: An address that is contained within a memory block returned
+    by myalloc()
+
+    This will also result in a segmentation fault. This is 
+    because we are trying to get the size of a header in a 
+    location that does not contain a header. The address being
+    passed to the function is in the middle of a block, which
+    means that it contains the payload and not a header.
+    Thus, the values of that location->size, ->next and ->prev
+    cannot exist.
+
+Case 3: An address that has already been freed?
+    
+    My allocator can handle this issue. Currently, it switches 
+    the size of the header at the location passed into the 
+    function to the absolute value of the original size. 
+    Thus, if it was allocated (negative), it becomes positive and
+    if it was free (positive), it remains positive.
+    Thus, there wouldn't be an error in this case and the allocator
+    would execute normally.
+
+b)
+
+One case that I never accounted for in my program was the case of
+an address being passed into the code that is outside of the memory
+pool. This does not matter for the current myalloc() function, since
+it looks through the memory pool only during the search for a free
+block and will thus only return an address of a block in the memory 
+pool. However, it will allow for greater error handling in the 
+myfree() function. Implementing a check to see if the address 
+inputted is less than (mem + MEMORY_SIZE) and greater than mem will
+ensure that myfree() only tries to free addresses in the memory pool.
+This check would have to take place before trying to access the 
+size, next and prev of the supposed header at that location. This will
+prevent a segmentation fault from occurring.
+If the address is not within the correct boundaries, the program
+should report an error and terminate or just report an error and
+skip trying to deallocate that address.
+
+To account for case 2, we would have to implement a check to see if
+there is a header at the (address - sizeof(header)) location or if
+that location is some location inside of a block. To do this, we could
+store all the headers in a vector. Additionally, we can add an int
+address to the header struct, that stores the headers location in memory.
+Then, when given an inputted address, we look at the address equal to the
+input address - sizeof(header) and check to see if that address is the
+address of any of the headers in the vector of total vectors. If it isn't,
+it means that the location passed into the myfree() function is not the 
+start of a payload and thus can not be deallocated. If this is the case,
+an error should be printed and the program should be terminated or the
+program should skip trying to deallocate that address so that it
+doesn't seg fault.
+
+The third error case discussed above has already been handled by
+my allocator. My allocator sets the header size of the inputted 
+payload = to the absolute value of its size. This makes it positive
+(free) if it was negative (allocated) and keeps it positive if it
+was already positive.

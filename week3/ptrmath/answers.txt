@@ -1,0 +1,71 @@
+Answers for the "Arrays, Pointer Arithmetic, and Structs" section of CS24 HW3:
+
+Question 1:
+
+*((int *) (p + 3)) = 0xDEADBEEF
+Since chars are 1 byte, p+3 goes to the third byte. Each pair of letters 
+is stored in 1 byte, because each takes up 4 bits. 
+Because IA32 is little endian, the least significant value will be stored in 
+the smallest byte. Thus, FE is stored in byte 3, EB is stored in byte 4, etc.
+
+*(((int *) p) + 3) = 0xCAFEBABE
+Since ints are 4 bytes, p + 3 goes to the 3*4th = 12th byte. Then, 
+each pair of letters is stored in 1 byte (again each letter takes up 4 bits)
+with the least significant value in the smallest byte. 
+Thus, EB is stored in byte 12, AB is stored in byte 13, etc.
+
+Byte    Value
+1         0
+2         0
+3         FE
+4         EB
+5         DA
+6         ED
+7         0
+8         0
+9         0
+10        0
+11        0
+12        EB
+13        AB
+14        EF
+15        AC
+16        0
+
+
+Question 2:
+
+The total size of the struct in memory is 16 bytes.
+
+The int id takes up 4 bytes, since ints take up that much space
+in memory. Then, the int id has an offset of 0.
+
+The char code[5] takes up 8 bytes. This is because each char takes
+1 byte, meaning this needs 5 bytes. However, since values are 
+on 4 byte boundaries, char code[5] actually takes up 8 bytes.
+The char code[5] has an offset of 4 because of the int id.
+
+struct entry* next takes up 4 bytes because pointers are allocated
+4 bytes in memory. Thus, the offset of the pointer is 12 bytes
+because of the sum of the memory for the int id and the char code[5].
+
+The total number of unused bytes are:
+    3 for the char code[5] since it only needed 5 bytes, but 8 were
+        allocated for it.
+
+Total Unused Bytes = 3
+
+
+Question 3:
+
+*arr gets allocated 160 bytes of memory since the sizeof(entry) is 16 and
+arr is malloced 10 * 16 = 160 bytes.
+
+Then, arr[4] gets to the (4 * 16) - 1 byte = 63rd byte.
+    The subtraction of 1 accounts for the fact that byte count is zero-based.
+code[3] will move the current byte forward by 8 bytes. This is because
+char code is at an offset of 4. And code[3] is 4 bytes into code, which
+brings the total offset to 8.
+
+Therefore, the value of offset that will cause the last two lines of code to 
+write to the same byte is 63 + 8 = 71.
