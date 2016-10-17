@@ -1,0 +1,26 @@
+The getVolume function is located in the class of the object. In other words,
+for some Shape object s, the getVolume function can be found by calling 
+s->class->getVolume(s). The IA32 instructions must mimic this call.
+
+The first thing to do is move the address of the object into a register. 
+This is done with a simple move statement. The address of the object
+is located at 8(%ebp) as stated in the question. (Line 23)
+
+We then have to get the class of this object. In order to do this, we would
+dereference the address of the object and get the first thing it points to,
+because the class is the first thing in the struct. Thus, we can dereference
+the register we moved the address of the object in. (Line 24)
+
+We then have to dereference the address of the class in order to get the
+getVolume function. We can do this by dereferencing the register that
+we moved the address of the class into. We move this dereferenced register
+into another register. (Line 25)
+
+We can then call that register to call the function. (Line 26) 
+
+IA32 Commands:
+
+mov     8(%ebp), %edx
+mov     (%edx), %ecx
+mov     (%ecx), %edx
+call    %edx
