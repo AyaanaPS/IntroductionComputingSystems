@@ -1,0 +1,62 @@
+Part 1:
+
+First, let us evaluate the time for the original processor.
+
+We assume that each instruction (including the LD/ST instructions) takes one
+clock cycle to complete. Let us first evaluate the time for the loop to execute
+once. Since there are 8 instructions in the loop + the instruction for the
+BNZ evaluation, we have a total of 9 instructions in the loop, which 
+translates to 9 clock cycles. Since we are considering an array of length = 100,
+this loop will run 100 times for a total time of 100 * 9 = 900 clock cycles.
+We must also add the time for the initial evaluation (to check if R2 (the length
+of the array) = 0). Thus, the total time for the original processor to 
+conduct this program is 901 clock cycles.
+
+Let us now evaluate the time that results from introducing the bus arbiter to 
+the program. Again, we can assume that most instructions take one clock 
+cycle to complete. However, the LD/ST instructions now take two or more cycles
+because they may have to wait for the arbiter to grant the bus-request and
+the arbiter may take one or more cycles to respond. 
+First, let us evaluate the time for the loop to exectute just once.
+In the worst case, the first LD will have to wait one cycle for it to be
+it's turn. This is because of the assumption that only one CPU of the 
+multi-processor is interacting with the main memory, so this processor
+will only have to wait at most one turn for it to be its turn.
+We can then factor in the time it takes for the arbiter to 
+respond to the request and update the grant value. We can say that this will
+take one cycle. Then, the actual exectution of the instruction will take
+one cycle. Thus, the first LD will take 3 clock cycles. Similarily, the next
+LD request will take three cycles.
+The Add will then take one cycle. Now, we consider the ST request. This, like
+the first LD request, will take 3 clock cycles - 1, in case it needs to wait 
+for its turn, 1 to account for the response delay, and 1 for the actual 
+exectution of the request. The remaining instructions will each take 1 clock
+cycle. Thus, the loop will take 3 + 3 + 1 + 3 + 1 + 1 + 1 + 1 + 1 = 15 clock
+cycles for just one execution. Since we are considering an array of length =
+100, this loop will run 100 times for a total time of 100 * 14 = 1500 clock
+cycles. Again, factoring in the first evaluation, this brings the total
+time taken for this program to 1501 clock cycles.
+
+Part 2:
+
+If we now consider that a second processor is executing this same program, 
+the performance can get tremendously worse. In the worst case, we can 
+see that the first LD instruction of the first processor will now have to wait
+at most 2 for it to be its turn. This is because when the first 
+processor wants to conduct its LD instruction, the second processor may have
+just begun its turn, meaning the first processor will have to wait. Thus, the
+second processor will make its request, wait for the arbiter to respond and
+then execute the first LD (which takes two cycles). It will then be the first
+processor's turn, since sequential operations require independent interactions
+with the bus-arbiter (thus, when processor 2 finishes its first LD, it 
+releases the bus, before making its next request for the second LD). 
+Thus, the first processor takes 4 clock cycles to finish it's first LD. 
+Similarily, it will take 4 clock cycles to finish it's second LD, since 
+it will again have to wait for the second processor to finish its next LD
+request. It will then take 4 cycles to complete it's ST request since again, 
+in the worst case, it will have to wait for the second processor to 
+complete whatever request it is doing (which will take at most 2 cycles). 
+Thus, the total time for processor1 to complete one execution of the loop is
+4 + 4 + 1 + 4 + 1 + 1 + 1 + 1 + 1 = 18. Thus the total time for the program
+is 1801 clock cycles. This is a terrible performance in comparison to the
+original processor.

@@ -1,0 +1,67 @@
+Question 1.
+PSEUDOCODE FOR REVERSE LINKED LIST FUNCTION
+
+First, we must check if the list is empty:
+if(list->head == NULL)
+{
+    return;
+}
+
+Next, we switch the head and temp values of the list:
+ListNode *temp = lst->head;
+lst->head = lst->tail;
+lst->tail = temp;
+
+Next, we switch the arrows of all of the elements to point to the one before
+instead of the one after. To keep track of the previous, current and old next
+nodes, we can create three temporary ListNodes.
+
+ListNode *previous = NULL;
+ListNode *current = lst->tail; The current must point to the original head.
+temp = NULL; This stands for the old next value of current. 
+
+We then make current's next equal the previous node (which switches the arrows). 
+We must then update previous and current for the next iteration.
+This continues until current is NULL.
+
+while(current != NULL)
+{
+    temp = current->next; This stores current's intial next value.
+    current->next = previous; This switches the arrows.
+    previous = current; This updates previous to be the current node (for the
+                            next iteration).
+    current = temp; This updates the current node being looked at.
+}
+
+At this point, the list has been reversed. The list->head is the new start
+of the list (which is the end of the old list). 
+
+
+Question 2.
+TRANSLATION TO SIMPLE OPERATIONS
+
+First, we check that the list is not empty. To do this, we compare 
+list->head to 0 (which represents NULL). If it is NULL we goto return. Else,
+we proceed to the following.
+
+First, we must perform the head and tail switch. 
+To do this, we store the lst->head in one location and the lst->tail in another 
+location and then set lst->head = to lst->tail and lst->tail = to the old 
+lst->head.
+
+We next store 0 in one register (to represent our NULL previous pointer) and
+the lst->tail in another (this is our current pointer. The reason it is
+lst->tail is because current must point to the original head of the list, which
+is now stored in lst->tail because of our above switch). We also store 0
+in another pointer (to represent our temporary pointer).
+
+Next, we move the next value of our current pointer into our temporary 
+location. We then update current's next to be the value of the previous pointer.
+Lastly, we set the previous pointer equal to the current pointer and then
+set the current pointer equal to the temporary pointer.
+
+We then check to see if the current pointer is equal to 0 (which means NULL).
+If it is, we are done. Else, we repeat the instructions (starting with moving 
+the next value of our current pointer into our temporary location.) This
+continues until the current pointer is NULL, at which point we are done
+with the list reversal.

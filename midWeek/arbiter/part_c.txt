@@ -1,0 +1,69 @@
+Original Code:
+
+R0 = start of array A
+R1 = start of array B
+R2 = length of arrays
+R7 = start of array Result
+
+    BZ  R2, EndLoop     # if (R2 == 0) goto EndLoop;
+Loop:
+    LD  R0, R3          # R3 = Memory[R0]
+    LD  R1, R4          # R4 = Memory[R1]
+    ADD R3, R4, R5      # R5 = R3 + R4
+    ST  R5, R7          # Memory[R7] = R5
+    INC R0              # Move ptr to next element of A
+    INC R1              # (Same with B, and with Result)
+    INC R7
+    DEC R2              # Decrement length ...
+    BNZ R2, Loop        # if (R2 != 0) goto Loop;
+EndLoop:
+    DONE
+
+We can modify this code so that the processor(s) executing this program
+do not relinquish access of the bus until they complete all the instructions
+that require the arbiter permission. The instructions that require this are
+the first two LD's (line 8 and 9) and the ST (line 11). Thus, 
+we can place the BLK at the beginning of the loop and the BUN after the
+ST. 
+
+R0 = start of array A
+R1 = start of array B
+R2 = length of arrays
+R7 = start of array Result
+
+    BZ  R2, EndLoop     # if (R2 == 0) goto EndLoop;
+Loop:
+    BLK                 # Gain access to the shared bus
+    LD  R0, R3          # R3 = Memory[R0]
+    LD  R1, R4          # R4 = Memory[R1]
+    ADD R3, R4, R5      # R5 = R3 + R4
+    ST  R5, R7          # Memory[R7] = R5
+    BUN                 # Release access of the bus
+    INC R0              # Move ptr to next element of A
+    INC R1              # (Same with B, and with Result)
+    INC R7
+    DEC R2              # Decrement length ...
+    BNZ R2, Loop        # if (R2 != 0) goto Loop;
+EndLoop:
+    DONE
+
+Now, the LD and ST operations will take 1 clock cycle each.
+Thus, the enclosed portion will take a total of 4 clock cycles (since
+there are 4 instructions within the BLK and BUN). 
+First let us consider a single CPU system. Then, The BLK and BUN will, in
+the worst case, take a total of 2 clock cycle to complete (in the worst
+case, they will have to one clock cycle for it to be Processor 1's turn and
+then they will have to wait for the arbiter's response). 
+Thus, the time for the whole BLK ... BUN part, is 2 + 1 + 1 + 1 + 1 = 6.
+Then, the total time for one execution of the loop is 6 + 1 + 1 + 1 + 1 + 1 = 
+11. Therefore, the total time for the program to execute will be 1101, which is
+much better than the time predicted in part b (1501 clock cycles).
+
+Let us now consider the case where both CPUs are running the program. The
+BLK and BUN will, in the worst case, take a total of 5 clock cycles to execute.
+Thus, the whole BLK ... BUN part will take 5 + 1 + 1 + 1 + 1 = 9 clock cycles.
+Therefore, the total time for one execution of the loop is 9 + 1 + 1 + 1 + 1 + 1
+= 14. Thus, the total time for the program to execute will be 1401, which
+is also better than the time predicted in part b (1801 clock cycles).
+
+

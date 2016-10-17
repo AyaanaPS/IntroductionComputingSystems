@@ -1,0 +1,145 @@
+1.
+
+This heap won't necessarily have allocation failures due to memory 
+fragmentation. If we assume that the blocks are freed in the order that they
+are allocated (since as stated in the question, these objects are used
+for a certain period of time and then released), there will constantly be 
+enough space for new small objects. Thus, the memory pool will fill up and 
+be released simultaneously so that large and simultaneous areas are either
+free or allocated. Ideally, there would not be any gaps in the memory pool.
+This also assumes a next fit or first fit approach, which is fine since the 
+allocations are all approximately the same size. Memory should fill up as 
+free memory and suitable (large enough) memory is found. Thus, there would
+be no memory fragmentations if deallocation happens in the order of 
+allocation.
+
+However, if the memory deallocation isn't necessarily in order of allocation,  
+using a free-list will result in allocation failures. This is because upon
+freeing objects, which happens very often, there will be small gaps in 
+the memory pool that may be too small to fit a payload. These gaps can, in this
+case be quite common and their total size can accumulate to be quite 
+substantial. This issue repeated multiple times in the total memory pool can
+result in allocation failures even if the total size of unallocated memory is
+large. Thus, this example shows that, because of the small size of payloads in 
+this instance, if deallocation does not happen in the order of allocation, 
+a free-list allocator can cause allocation failures due to memory fragmentation.
+
+2. 
+
+There are many issues that can arise when using a free-list allocator for
+the memory storage of small objects. Consider the allocator structure defined
+in class. This type of structure has a header that contains information 
+about that particular memory block. Because we are dealing with many small 
+objects, the size of the headers of each of these blocks can accumulate to 
+take up a substantial portion of the memory pool that could otherwise be
+used for more payloads. 
+
+Another issue can arise with the splitting of blocks. The splitting of blocks
+to fit the size of the payload exactly can result in memory blocks with sizes
+that can not accomodate most payload requests. Consider the action of
+finding the memory block to use for memory. Say the best fit method is 
+implemented for this allocator (because this is supposed to the method that
+leads to the greatest memory utilization). Then, we will look for the smallest
+block that is larger than the payload size. However, this will result in blocks
+that are too small to accomodate the size of the header + the size of 
+the average small block. Thus, this leads to more 'impossible to allocate'
+memory blocks. 
+However, the best fit method is not necessarily the best method in this case. 
+This is because, due to the large number of blocks that may exist (and that may
+have been freed), iterating over every single one of them is not time efficient.
+If we consider that either the first fit or next fit methods are implemented,
+we can still see that we run into the problem of creating 'impossible to 
+allocate' memory blocks due to the action of splitting blocks to fit the 
+payload perfectly. 
+
+3. 
+
+Many of this allocator's benefits remove the issues with the general-purpose
+heap allocator, which were outlined in question 2. 
+
+The first benefit is that we don't encounter the issue of a large amount
+of wasted memory space due to the headers of each memory pool. Because the
+small objects are simply located inside of chunks, they don't need headers
+to specify their location. Thus, the use of simply a chunk header to
+specify a group of small objects cuts down the amount of wasted space used
+for structuring the blocks. Since each chunk can hold thousands of small
+objects, we can see that the small object heap allocator has a much 
+greater memory utilization.
+
+This type of allocator also overcomes the issue of having a large time 
+complexity or creating 'impossible to allocate' memory blocks when finding
+the memory block to use for allocation. This is because the structure simply
+involves checking whether each chunk has enough space to hold the payload
+currently being looked at and then picking the first one that does.
+
+Assuming that deallocation happens in the order of allocation, completely
+allocated chunks will deallocate before other chunks start to deallocate.
+Thus, memory fragmentation errors will be minimized since there won't be
+gaps (except for the gaps that result when a chunk's free size is not
+large enough to hold another payload). However, these gaps will be very small
+in comparison to the amount of payloads in each chunk. This is because each
+chunk can hold thousands of payloads and the each payload is around the same
+size.
+
+4. 
+
+The issue that arises is that there may now be allocation failures due
+to memory fragmentation. This is because we don't know which objects have 
+a larger lifetime. Thus, deallocation will not always happen in the order
+or allocation. Thus, the issue may arise where one chunk has gaps in it's 
+memory because it may free the objects with the normal lifetime and then skip
+the one with a larger lifetime. Then, the chunk won't reset and start to refill,
+since this heap allocator doesn't reclaim any of the chunk's memory until all
+small objects are no longer available.
+Consider the example where there are 5 chunks and each has 1 object with a 
+larger lifetime. Say all of the chunks fill and deallocate except for the 1 
+object in each with a large lifetime. Then, the program will not be able
+to allocate any more memory because as stated in the assignment, 'we don't
+reclaim any of the chunk's memory until all small objects are no longer 
+available'. This is a big problem because there is actually a lot of 
+free memory to be allocated.
+
+5. 
+
+The way to encounter this issue is to implement a way to reallocate memory 
+in the chunk once enough of the chunk is free. One way to do this is to have
+a way of reallocating memory once a certain percentage of the chunk is free 
+(in other words, once a high enough percentage of the number of objects is
+free). 
+To do this we must first set a threshold of free objects. 
+Let us arbitrarily set this threshold to 70% of the objects in the chunk
+must have been freed before we start allocating memory.
+This can be computed by dividing the num_freed value by the total
+objects value and seeing if it is greater than or equal to 0.70. If it is,
+we can allocate memory in the chunk.
+
+We must now have a way to keep track of which available objects are free. To do 
+this, we can simply have an array from 0 to the total_objects value. When
+objects are allocated at a particular position, we can remove that spot from
+the array. When objects are deallocated, we can add that spot and sort the
+array. To do this we can use the object pointer passed in (which specifies
+the memory region to be deallocated), and cast it as an unsigned int.
+We can then subtract the c->mem and divide the c->obj_size. This is the 
+reverse of the operation done in the smallobj_alloc function: 
+obj = (void *) (c->mem + c->obj_size * c->next_available).
+
+Then, once the threshold has been met, we can allocate memory according to 
+the available positions in the array. Since, the size of the payloads is
+small and similar, we know that the available blocks will hold the payload
+(since each one can hold the maximum size of the payload: in this case, 100
+bytes). 
+
+Thus, the only change to the data structure is the addition of an integer
+array to the chunk structure. In comparison to the amount of payloads the 
+chunk can hold, this structure is still very small in size. 
+
+This overcomes the issue outlined in question 4 because it allows memory
+to be reallocated in the chunks, even when the chunks are not entirely free. 
+
+
+
+
+
+
+
+
