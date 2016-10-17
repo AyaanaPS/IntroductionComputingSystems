@@ -1,0 +1,42 @@
+Description of the Stack:
+
+1. 3                                           0x1008
+2. Ret_Address (of main, which we don't know)  0x1004
+3. Bp - Init (Old base pointer is pushed)      0x1000
+4. 2 (arg at 0x1008 - 1)                       0x0ffc
+5. Ret_Address 0x2030 (fact_resume)            0x0ff8
+6. Bp-1 0x1000                                 0x0ff4
+7. 1                                           0x0ff0
+8. Ret_Address 0x2030 (fact_resume)            0x0fec
+9. Bp-2 0x0ff4                                 0x0fe8
+10. 0                                          0x0fe4
+11. Ret_Address: 0x2030 (fact_resume)          0x0fe0
+12. Bp-3 0x0fe8                                0x0fdc
+
+Explanation: 
+
+Line 1: Argument is stored onto the stack.
+Line 2: Return address to go back to the main is pushed onto the stack.
+    We do not know this return address.
+Line 3: Bp-Init the old base pointer is pushed onto the stack, which is
+    currently at 0x1000.
+Line 4: We move to fact_continue and push arg-1 = 2 onto the stack.
+Line 5: Call to fact pushes the next lines address (fact_resume) onto the stack.
+Line 6: Back in the fact part, the old base pointer is pushed onto the stack.
+    This is the base pointer at 0x1000 because previously, the current stack
+    became the new base (movl %esp,%ebp)
+Line 7: We move to fact_continue and push arg-1 = 1 onto the stack.
+Line 8: Call to fact pushes the next lines address (fact_resume) onto the stack.
+Line 9: Back in the fact part, the old base pointer is pushed onto the stack.
+    This is the base pointer at 0x0ff4 because previously, the current stack
+    became the new base.
+Line 10: We move to fact_continue and push arg-1 = 0 onto the stack.
+Line 11: Call to fact pushes the next lines address (fact_resume) onto the stack
+Line 12: Back in the fact part, the old base pointer is pushed onto the stack.
+    This is the base poitner at 0x0fe8 because previously, the current stack
+    became the new base.
+
+Nothing else is pushed to the stack because we now move into fact_resume and
+fact_return, which don't push anything.
+
+

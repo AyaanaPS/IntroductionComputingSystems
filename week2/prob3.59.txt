@@ -1,0 +1,70 @@
+/*
+ * The following shows the assembly code and notes indicating what each line
+ * does.
+ *
+ * push %ebp: Push old base pointer
+ * mov %esp, %ebp: Current stack is the new base
+ * mov 0x8(%ebp), %eax: Get argument 1 (x) and put in register eax
+ * mov 0xc(%ebp), %edx: Get argument 2 (n) and put in register edx
+ *
+ * SETTING UP JUMP TABLE ACCESS
+ * sub $0x32, %edx: Compute index = n - 50
+ * cmp $0x5, %edx: Compare index:5
+ * ja 8048448 <switch_prob+0x2b>: If > Go to switch statement's case for 51.
+ *      This makes case 51 a default case.
+ * jmp *0x80485d0(,%edx,4): If not, go into jump table using computed index
+ *
+ * This is the case for 0x08048438 which represents both 50 and 51.
+ * shl $0x2, %eax: Result = Shift logical left by 2
+ * jmp 804844b <switch_prob+0x2b> Break (by jumping out)
+ *
+ * This is the case for 0x0804843d, which represents 53
+ * sar $0x2, %eax: Result = Shift arithmetic right by 2
+ * jmp 804844b <switch_prob+0x2b> Break (by jumping out)
+ *
+ * This is the case for 0x08048442, which is 54
+ * lea (%eax, %eax, 2), %eax: Result = x * 3
+ * Since this case does not have a break, it falls through.
+ *
+ * This is the case for 0x08048445, which is 55
+ * imul %eax, %eax: Result = x * x
+ * Since this case does not have a break, it falls through.
+ * 
+ * This is the default case for the switch statement.
+ * add &0xa, %eax: Result = x + 10
+ * Like for case 54, this case falls through.
+ *
+ * pop %ebp: Pop old base of frame
+ * ret
+ *
+ * This completes the switch statement. This logic was used to write the 
+ * following C code.
+ */
+
+int switch_prob(int x, int n)
+{
+    int result = x;
+
+    switch(n) {
+
+        case 50:
+        case 52:
+            result = result << 2;
+            break;
+
+        case 53:
+            result = result >> 2;
+            break;
+
+        case 54:
+            result = 3 * result;
+
+        case 55:
+            result = result * result;
+
+        default:
+            result = result + 10;
+    }
+
+    return result;
+}

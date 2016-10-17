@@ -1,0 +1,22 @@
+mov1 8(%ebp), %eax
+    This step will move the value at M[8 + %ebp] into %eax
+    Thus, eax = x if 8(%ebp) = x
+
+imull $3, %eax
+    This step will multiply 3 by the value of eax and then store it in eax
+    Thus, eax = 3x after this step.
+
+addl $12, %eax
+    This step will add 12 to the value of eax and then store it in eax.
+    Thus, eax = 3x + 12 after this step.
+
+imull 8(%ebp), %eax
+    This step will multiply the value at 8(%ebp) with eax.
+    Since the value at 8(%ebp) is x, the result after this step is
+    eax = 3x^2 + 12x
+
+subl $17, %eax
+    This step will subtract the value 17 from the eax.
+    Thus, after this step, the result will be 3x^2 + 12x - 17
+
+Thus, this code computes 3x^2 + 12x - 17 assuming 8(%ebp) = x

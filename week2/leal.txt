@@ -1,0 +1,7 @@
+leal 6(%eax), %edx: Sets register edx to x + 6
+leal (%eax, %ecx), %edx: Sets register edx to x + y
+leal (%eax, %ecx, 4), %edx: Sets register edx to x + 4y
+leal 7(%eax, %eax, 8), %edx: Sets register edx to 9x + 7
+leal 0xA(, %ecx, 4), %edx: Sets register edx to 10 + 4y
+leal 9(%eax, %ecx, 2), %edx: Sets register edx to x + 2y + 9
+
