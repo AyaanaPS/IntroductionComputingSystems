@@ -1,0 +1,115 @@
+Sieve of Eratosthenes
+=====================
+
+1.  Brief machine specifications:
+
+    Processor: Intel Core i5
+    Memory: 4 GB 1600 MHz DDR3 
+    System Speed: 1.6 GHz
+    Operating System: Macintosh OS X
+
+Value of N for running the program:
+
+    2500000000
+
+Output of "time ./psieve N > /dev/null":
+
+    Using maximum value of 2500000000
+
+    Total primes found: 121443371
+
+    real    0m56.967s
+    user    0m56.099s
+    sys     0m0.433s
+
+Size of bit-vector for N, in bytes:  (show your work)
+
+    Number of odd numbers up to 2500000000: 1250000000 (including 1)
+    Therefore, number of odd numbers that must be stored = 1249999999
+
+    Each unsigned int in the bit vector can hold 32 values. Thus, we need
+    1249999999/32 unsigned ints = 39062499.9 unsigned ints in the bit vector,
+    which means a total of 39062500 unsigned ints.
+
+    We know that 1 byte = 8 bits and that 1 unsigned int = 32 bits
+
+    Thus, 39062500 unsigned ints = 1.25*10^9 bits
+    This is equal to 156250000 bytes.
+
+-------------------------------------------------------------------------------
+
+
+2.  Cache performance behavior of prime sieve:
+
+a)  Discussion of stride reference pattern:
+
+    A stride-k reference pattern means the program accesses values every 
+    k steps. In other words, when a program accesses every kth element in a 
+    sequence, it is called a stride-k reference pattern. This program does
+    not have a constant stride reference pattern. The stride varies as the
+    program executes according to which number is acting as the sieve. 
+    This has a stride reference pattern of p where p is the number
+    currently acting as a sieve. This is because the program sets the bit value
+    to 0 for all numbers that are odd multiples of the sieve. Therefore,
+    when traversing through the bit vector to set bit values to 0 for multiples,
+    it accesses values every p steps. For example, for a sieve of 3, the
+    program accesses values every 3 = 3 steps (thus arriving at values 3, 9,
+    11, ...). Meanwhile, for a sieve of 15, the program accesses values every 
+    15 steps.
+
+b)  Discussion of locality and cache hits/misses:
+    
+    Good locality is seen when looking through the result bit vector to print
+    and count the primes. This is because the stride-k reference pattern has
+    k = 1 since we must look at each element. Thus, we leverage caches well
+    for this part.
+
+    The actually setting of the bit values does not leverage caches well since
+    sa the stride-k reference increases (i.e. as the value of the sieve
+    increases), locality decreases. With lower locality, we will have a larger
+    amount of cache misses. This is because our stride take us out of the 
+    current cache faster when our stride is larger. With higher N values,
+    such as 2500000000, the sieve at one point will be 50000 (sqrt of N). Each
+    cache has 32KB of space, which is 32000 bytes, which is 8000 unsigned ints.
+    This corresponds to 256000 values for each cache. Since we need to store
+    1249999999 values, we need about 1249999999/256000 caches = 4883 caches. 
+    Then, with higher strides, we will be jumping from one cache to another 
+    quickly, thus causing more cache misses.
+
+    The number of cache misses will depend on the N value. Consider N =
+    2500000000 which needs 4883 caches (as seen above). Then, for the first
+    sieve of 3, we will need to jump through 4883 caches. We then update the
+    sieve to be 5 and thus jump through 4883 caches. This continues until we
+    get to the square root of N (50000). Thus, we will go through 4883 caches
+    for each sieve, which is a very large number of cache misses.
+
+    In other words, with higher N values, cache misses will increase due to
+    poor locality since the bit vector cannot fit in a small amount of caches.
+
+-------------------------------------------------------------------------------
+
+3.  Suggestions for improving the sieve's performance:
+
+    Optimizations to this algorithm/structure should increase locality of the
+    program, even in cases with higher valued sieves. Thus, we should sieve all
+    the data on one cache before moving on to the next cache. All of the
+    sieves that we use will be less than the square root of N. The odd values
+    below the square root of even a large number like 2500000000 can easily 
+    fit on one cache: square root 2500000000 = 50000. Thus, we must store
+    50000/2 - 1 values = 24999 values = 782 unsigned integers = 3135 bytes.
+    1 cache can hold 32000 bytes, so 24999 values can easily fit on once cache.
+    We can run the for loop from the find_primes() function in psieve.c, but 
+    limit it to only remove the multiples in the cache currently being looked
+    at. Thus, at the end of the for loop, we will not have jumped to any other
+    cache and will have all of the primes up to the square root (and the primes
+    after that fit on that first cache). 
+
+    We can store all of the values below the square root that are prime in a 
+    list, that we will now call our list of sieves. We can then consider each
+    cache and use our list of primes to sieve the entire cache before moving
+    on to the next cache. Thus, we diminish our number of cache misses by 
+    updating each cache to get rid of every sieve multiple before moving on 
+    to the next cache. Now, for the example seen in part b (N = 2500000000, 
+    number of caches = 4883), we will only have to jump through 4883 caches in
+    total, rather than 4883 for each sieve. This will greatly improve cache
+    performance.

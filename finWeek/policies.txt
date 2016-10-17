@@ -1,0 +1,114 @@
+Page Replacement Policies and Scan Resistance
+=============================================
+
+-------------------------------------------------------------------------------
+
+Question 1: 
+
+a) FIFO:
+
+    This policy does not really consider recency of access or frequency of
+    access. The way FIFO works is, as a page is mapped, it adds the page
+    to a queue. When space is needed, it simply unmaps the first page. 
+    Thus, it considers recency of addition to the queue when choosing
+    which page to unmap. However, the time since addition does not actually
+    inform importance of the page, since the first page in the queue might
+    be the most commonly accessed one. Thus, important and frequently 
+    accessed pages might be evicted, which increases the number of page loads.
+
+b) Second Chance:
+
+    This policy considers recency of access, but not frequency of access.
+    Like FIFO, it stores the pages in a queue as they are mapped. When space
+    is needed, it looks at the page at the head of the queue. However, if
+    the access bit of that page is set, it clears the bit and moves the
+    page to the back of the queue, thus allowing the page to remain mapped.
+    It then looks at the new head of the queue. This continues until
+    it founds a page whose accessed bit is clear (indicating that
+    it has not been accessed since the last unmapping).
+
+    Clock:
+
+    Like Second Chance, this policy considers recency of access, but not
+    frequency of access. This is because the victim is chosen based on the
+    accessed bit of the page. If the access bit is 1 (indicating it has been
+    accessed since the last eviction), the page is cleared and the clock hand
+    is moved. Else, if the access bit is 0 (indicating it has not been 
+    accessed since the last eviction), it is evicted. Since the access
+    bit can only be 1 or 0, this doesn't tell us how many times the page
+    was accessed, only that it was accessed.
+
+c) Aging:
+
+    This policy considers a combination of frequency of access and recency
+    of access. This is done by maintaining an age value for each page that gets 
+    updated during traversals, which happen on a periodic time interval. With
+    each page traversal, the value of each page is shifted right by 1 bit. This
+    is because it hasn't been evicted yet so it's age is incremented. 
+    Furthermore, the topmost bit is set to the current accessed value. If the 
+    accessed bit was set, it is cleared during the traversal. Then, during
+    eviction, the page with the lowest age is chosen, since lower values
+    indicate infrequent access and less recent access. 
+    Thus, this policy smartly balances between frequency of access and recency
+    of access.
+
+-------------------------------------------------------------------------------
+
+Question 2: 
+
+The Aging policy is not particularly susceptible to scans since the policy 
+keeps track of amount of times each page is accessed. In a scan, a set of pages
+will be accessed and will thus have an age of 2 (since every page starts with 
+an age of 1). Then, other pages that are accessed after the scan will have their
+age values incremented, while the pages from the scan have a constant age. 
+Eventually, these pages will have the lowest age values (compared to the 
+other pages that are currently residents) and will be chosen for eviction. The
+scan can potentially cause a small amount of pages to be evicted in the short
+period after the scan (while the scanned pages have higher age values than
+others). However, in the long run, scanned pages will be evicted while the
+remaining ones will still be resident. 
+
+-------------------------------------------------------------------------------
+
+Question 3:
+
+a)  It corresponds to LRU-2 in the sense that it tries to consider the 
+    frequency of access as well as the recency. 2Q does a better job since it
+    is able to start ordering the Am queue by the amount of times accessed, 
+    without actually storing a value to indicate that. This is because the
+    more times a page is accessed the closer to the front it is (since each
+    time a page is accessed, it is moved to the front of the Am queue). Thus,
+    the Am queue will (after many accesses) have the pages with the fewest 
+    (but at least 2) accesses at the back of the queue. Then, when it comes
+    time to evict a page, we will either evict a page that has only been
+    accessed once (from the A1 queue), or when that has been accessed the
+    fewest number of times (from the Am queue). 
+    LRU-2 is scan-resistant, but will still fail in a case where the scan 
+    occurs twice and then no more. In other words, it fights the problem of a 
+    single scan, but doesn't solve the greater issue of not considering 
+    frequency of access.
+
+b)  In order to rearrange the A1 and Am queues, we can use the access bit
+    of each page and a periodic timer interrupt. When a page is mapped,
+    we add it to the A1 queue with a cleared access bit. Everytime we 
+    interrupt, we can traverse all of the pages in each of the two queues. If
+    the access bit of a page in the A1 queue is set, we clear it and move it 
+    to the back of the Am queue (because it has now been accessed more than 
+    once). Similarily, if the access bit of a page in the Am queue is set, we 
+    clear the bit and move the page to the front of the Am queue. We can
+    keep track of the number of resident pages by giving each queue a 
+    num_page value. At the beginning of our mapping, we can check to make 
+    sure that the sum of num_page value for both queues is less than the max
+    number of resident pages. When a MAPERR page fault occurs, we evict a
+    resident page by getting rid of the tail of the A1 queue or, if the A1
+    queue is empty, the tail of the Am queue. We then map the page by 
+    ensuring the queue's have room for another resident and then adding it to 
+    the A1 queue with a cleared access bit. If a ACCERR occurs, we 
+    have to map the page.
+
+c)  This approximates the 2Q algorithm quite well and will continue to be 
+    scan-resistant (it will be able to identify pages that are part of 
+    a scan and pages that are not part of a scan). Pages that are part
+    of a scan will be in the A1 queue and will thus be the first to be evicted. 
+    Pages that are accessed more than once (i.e. pages that are not part of a
+    scan will be in the Am queue). This is similar to the 2Q algorithm.

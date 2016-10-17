@@ -1,0 +1,73 @@
+Lottery Scheduling
+==================
+
+-------------------------------------------------------------------------------
+
+Question 1:
+
+The lottery scheduler would be unfair in situations where processes greatly 
+differ in runtime. For example, if we have two processes with an equal number
+of tickets (indicating equal priority), we should expect the two processes to
+have equal run time. However, the process that takes a shorter time will get
+a smaller fraction of the amount of time alloted. This is unfair.
+
+To ensure that it is fair, the process that takes less time, but is equal 
+priority should get extra tickets to ensure that it has the CPU for an equal
+amount of time. 
+
+Thus, the basic condition that must be met for the lottery scheduler to be fair
+is to allocate tickets based on priority, with run time factored in.
+
+-------------------------------------------------------------------------------
+
+Question 2:
+
+This can be achieved by allocating more tickets to processes deemed "less nice.
+The more tickets that a process has, the more CPU time the process gets,
+since the probability that that process will be chosen to run next is
+higher. Similarily, a "nicer" process will get fewer tickets and will thus
+have less CPU time since it's probability of being chosen is less. In other
+words, priority of a process can be raised by allocating more tickets to the
+process, and lowered by allocating less tickets to the process.
+
+-------------------------------------------------------------------------------
+
+Question 3: 
+
+In order to give preference to interactive process, we can allocate more tickets
+to these processes (as compared to the compute-intensive processes). However,
+as seen in question 2, the amount of tickets we allocate must factor in the 
+length of time these tasks take to run. Thus, we can allocate a certain amount
+of tickets initially and then alter this amount during the running/execution 
+of the process. In other words, we can give priority to interactive processes
+by lowering the amount of tickets allocated to processes as they run. Thus,
+the longer a process takes to run, the fewer the tickets they have, thus
+lowering their priority. Processes that are interactive will use less CPU time
+then they are allocated to use, and should thus have more priority (extra 
+tickets) to compensate for this. Since they run faster, their amount of tickets
+will not get significantly lowered during run time as compared to 
+compute-intensive processes. Additionally, because priority is lowered based
+on length of time it takes to run, if an interactive process changes over
+time to become compute-intensive, the code will adjust for this. As it takes 
+longer and longer to run, more and more tickets are taken away from the
+process. To avoid processes losing all of the tickets (or not having enough
+to be chosen ever), we can periodically increase the number of tickets that
+every process has. This will allow us to also reflect a compute-intensive
+process becoming interactive over time. This is because the faster and faster
+it takes to run, the more tickets will be added to it than are being taken away.
+
+-------------------------------------------------------------------------------
+
+Question 4:
+
+Yes. This is possible in the short term runs, when all the processes have a
+similar amount of tickets (i.e. before we have been able to accurately 
+reduce/increase the amount of tickets each process has to reflect it being
+either compute-intensive or interactive). Then, just by chance and probability,
+a compute-intensive process might be chosen over an interactive process that is
+also ready to run. One way to combat this is to allocate the amount of tickets
+based on the nature of the process intially. This would involve classifying
+a process as either interactive or compute-intensive before we actually see them
+run. We can do this initially based on size of the process. Thus, when we
+initialize our lottery (allocate tickets), we can allocate based on size and
+then adjust during run time as described in Questino 3.

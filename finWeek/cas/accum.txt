@@ -1,0 +1,13 @@
+Accumulator Implementation
+==========================
+
+My implementation would be lock free, since it does not bound the current 
+thread. My implementation simply ensures that the accumulator has not been
+modified between the time that the add_to_accum function was called and the
+time to add the inputted value to accum. Thus, an individual thread can
+potentially take an unbounded number of steps to complete a given operation.
+One possible scenario is when threads must wait for the currently running
+thread to complete execution. If there was a finite bound for each thread,
+each thread would get to take turns updating accum. However, since there
+is no finite bound, the current (initial thread) will be able to keep on 
+updating the accum without interruption from the other threads.

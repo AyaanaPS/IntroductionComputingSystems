@@ -1,0 +1,79 @@
+Process Puzzlers
+================
+
+-------------------------------------------------------------------------------
+
+Question 1:
+
+This code will print out "zipzapzoom" every single time.
+
+This is because the only variability would be in the execution of the processes,
+which actually remains constant.
+
+signal(SIGUSR1, handler1) is the first thing called. Thus, it will immediately
+print out "zip" even before forking. Then, this process is killed (meaning
+executed/terminated). Then, the parent process of the fork (the
+else statement) has a wait, meaning that it will wait for the child process to
+execute before executing. Thus, it will go into the if branch first, which
+calls handler2 and thus prints out "zap". The while(1) loop waits for this
+process to stop executing, which occurs almost immediately because of the
+exit(0) call in handler2. We then return to the else and print
+out "zoom". Thus, the output is "zipzapzoom".
+
+-------------------------------------------------------------------------------
+
+Question 2:
+
+2030401 - POSSIBLE: 
+
+First this would go to the parent process (the else). Here, a new child is 
+created by the forking. However, we move to the parent process first
+(the printf("2") in the else branch) and print 2. This process would then be
+done, so the terminating 0 would be printed. This would then go to the child 
+process generated. This in turn creates a grandchild process. Then, if we go into 
+the child's branch (the else in the if), we wait for the grandchild to terminate. 
+Thus, the we go into the grandchild branch (the if in the if) and print 3. This 
+process terminates with the 0 at the end. We then go back to the child branch
+created in the else block. This prints a 1 and then exits (meaning the final
+terminating 0 does not get printed.) 
+
+Thus, this is a possible output.
+
+1234000 - NOT POSSIBLE:
+
+This is not possible. This is because 4 can only be printed once that child
+concurrent process has executed. In other words, 4 can only be printed once
+3 0 has been printed. (The concurrent child - the grandchild - process prints 3 
+and then executes after printing 0). Thus, we need at least one 0 between
+3 and 4 for this to be possible.
+
+2300140 - POSSIBLE:
+
+This is possible. First, we move into the parent process (fork() != 0) and
+within that, we go to the parent process of the nested fork(). This prints 2.
+Before ending that process, we go to the child of the initial fork().
+Within this process (the if branch), we create a grandchild process from 
+another fork(). We end this process, thus printing a 3 and a 0 and then
+resume execution of the parent from before (the one that printed 2). Thus, we 
+have 2300. We then move into the child of the parent (the if in the else), where
+we print 1 and exit(0). Lastly, we go into the child (the else in the if), where
+we print 4 and then end after printing 0.
+
+2034012 - NOT POSSIBLE:
+
+This is not a possible output, since it does not have enough terminating zeroes.
+There must be 4 processes created from this code, one of which ends in an
+exit(0). The remaining 3 processes must get to the terminating printf("0") 
+statement at the end of the code.
+
+3200410 - POSSIBLE:
+
+This is possible just like 2300140 and 2030401. First we go to the first
+child created. Within that, we go to the grandchild created, which prints 3.
+Before ending, we move to the original parent process. Within that, we go
+to the parent process of the nested fork(), which prints 2. We terminate this
+by printing 0 and then resume termination of the grandchild (that printed 3).
+Thus, we have 3200. We then go into the child (the else in the if), where we
+print 4. Before finishing this process, CPU gives time to the second child of
+the parent (the if in the else) which prints 1 and then exits. We then 
+resume the execution of the child and end by printing 0.
