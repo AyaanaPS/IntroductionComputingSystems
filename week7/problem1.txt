@@ -1,0 +1,10 @@
+Clearly, producer 1 is never adding elems to the buffer and thus, the 
+consumer does not get any of producer 1's elems. This is because producer 0 
+completely fills up the buffer, since the buffer_add function does not cause 
+the thread to yield until the buffer is full. Then, when producer 1 tries to
+add to the buffer, it will find that the buffer is already filled. Thus,
+producer 1 will be made to yield since producer 0 already filled up the buffer.
+Then, when the consumer takes from the buffer, it will take all of producer 0's
+elements, until the buffer is empty. Then, the consumer thread will yield and
+producer 0 will start running again. This continues over and again. Clearly,
+producer 1 never gets to add to the buffer and thus, this program is not fair.
